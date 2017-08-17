@@ -144,13 +144,9 @@ class WP_Menu_Query {
 			 */
 			'offset' => 0,
 			/**
-			 * Whether to include child menu items or not.
-			 * @var boolean
-			 */
-			'include_children' => true,
-			/**
-			 * Pass a specific item_type_array to get child items for that item.
-			 * @var array
+			 * Pass a specific item_type_array or a menu item ID 
+			 * to get child items for that item.
+			 * @var array|integer
 			 */
 			'parent' => 0,
 		);
@@ -191,9 +187,6 @@ class WP_Menu_Query {
 	 * @return WP_Menu_Item The next item.
 	 */
 	public function the_item() {
-		// echo '<pre style="text-align:left;">'; 
-		// var_dump( $this->current_item, $this->items ); 
-		// echo '</pre>';
 		if ( isset( $this->items[ $this->current_item ] ) ) {
 			$this->item = $this->items[ $this->current_item ];
 			$this->current_item++;
@@ -245,6 +238,10 @@ class WP_Menu_Query {
 		$menu = $this->get_menu();
 		$items = wp_get_nav_menu_items( $menu->term_id );
 
+		// Filter the items array to only include child items of the parent 
+		// if parent option was passed.
+		$items = array_values( array_filter( $items, array( $this, '_filter_to_parent' ) ) );
+
 		// Map the items to corresponding WP_Menu_Items
 		foreach ($items as $key => $item) {
 			// _filter_item will return the mapped item, or false if invalid
@@ -256,13 +253,13 @@ class WP_Menu_Query {
 
 		// Apply limit and offset if passed
 		$limit = count( $this->items );
-		if ($this->get( 'limit' ) > -1 && is_numeric( $this->get( 'limit' ) )  ) {
+		if ( $this->get( 'limit' ) > -1 && is_numeric( $this->get( 'limit' ) ) ) {
 			$limit = (integer)$this->get( 'limit' );
 		}
 
 		$this->items = array_slice( $this->items, $this->get( 'offset' ), $limit );
 
-		// Update class properties with amount found
+		// Update class properties with number found
 		$this->item_count = count( $this->items );
 		$this->found_items = $this->item_count;
 	}
@@ -291,9 +288,18 @@ class WP_Menu_Query {
 		return true;
 	}
 
+	private function _filter_to_parent( $item ) {
+		$parent = 0;
+		if ( $this->get( 'parent' ) > 0 && is_numeric( $this->get( 'parent' ) ) ) {
+			$parent = $this->get( 'parent' );
+		}
+
+		return $parent === (integer)$item->menu_item_parent;
+	}
+
 	private function _filter_item( $item ) {
 		// Convert the item to a WP_Menu_Item
-		$item = new WP_Menu_Item( $item );
+		$item = new WP_Menu_Item( $item, $this->get( 'location' ) );
 
 		/**
 		 * Check include conditions if passed.

@@ -26,10 +26,28 @@ class WP_Menu_Item {
 	private $_raw_item;
 
 	/**
+	 * The menu location this item was created for.
+	 * @var string
+	 */
+	public $location;
+
+	/**
 	 * Whether this menu item is the currently queried page or not.
 	 * @var boolean
 	 */
 	private $_current;
+
+	/**
+	 * Child items of this item. Stored as a menu query for easy iteration/access.
+	 * @var WP_Menu_Query
+	 */
+	private $_children;
+
+	/**
+	 * Whether this menu item has a child item which is the currently queried page or not.
+	 * @var boolean
+	 */
+	private $_has_current_child;
 
 	/**
 	 * Initialize the class and set its properties.
@@ -37,9 +55,14 @@ class WP_Menu_Item {
 	 * @since    1.0.0
 	 * @param    WP_Post    $item The raw menu item.
 	 */
-	public function __construct( WP_Post $item ) {
+	public function __construct( WP_Post $item, $location ) {
 		$this->_raw_item = $item;
 		$this->_map( $item );
+
+		$this->location = $location;
+
+		$this->_children = null;
+		$this->_has_current_child = null;
 
 		$this->set_current( apply_filters( 'wp_menu_query_item_is_current', $this->_is_queried_object(), $this ) );
 	}
@@ -98,6 +121,68 @@ class WP_Menu_Item {
 		$this->_current = $current;
 	}
 
+	public function has_parent() {
+		return 0 !== $this->parent;
+	}
+
+	public function get_children() {
+		if ( null === $this->_children ) {
+			$this->_get_children();
+		}
+
+		return $this->_children;
+	}
+
+	public function has_children() {
+		if ( null === $this->_children ) {
+			$this->_get_children();
+		}
+
+		return $this->_children->found_items > 0;
+	}
+
+	public function get_child_count() {
+		if ( null === $this->_children ) {
+			$this->_get_children();
+		}
+
+		return $this->_children->found_items;
+	}
+
+	public function has_current_child() {
+		if ( null === $this->_has_current_child ) {
+			$this->_has_current_child = $this->_has_current_child();
+		}
+
+		return $this->_has_current_child;
+	}
+
+	private function _has_current_child() {
+		if ( null === $this->_children ) {
+			$this->_get_children();
+		}
+
+		$match = false;
+
+		foreach ($this->_children->items as $key => $item) {
+			if ( $item->is_current() ) {
+				$match = true;
+				break;
+			}
+		}
+
+		return $match;
+	}
+
+	private function _get_children() {
+		$this->_children = new WP_Menu_Query(
+			array( 
+				'location' => $this->location,
+				'parent' => $this->ID,
+			)
+		);
+	}
+
 	private function _map( WP_Post $item ) {
 		/**
 		 * The menu item's ID.
@@ -112,7 +197,7 @@ class WP_Menu_Item {
 		 * The parent menu item ID
 		 * @var integer
 		 */
-		$this->parent = $item->menu_item_parent;
+		$this->parent = (integer)$item->menu_item_parent;
 
 		/**
 		 * Type of object.
@@ -126,7 +211,7 @@ class WP_Menu_Item {
 		 * Post ID for posts, Term ID for terms.
 		 * @var integer
 		 */
-		$this->object_id = $item->object_id;
+		$this->object_id = (integer)$item->object_id;
 
 		/**
 		 * If the item is an archive, there will be no object ID.
