@@ -13,6 +13,48 @@
  * @subpackage WP_Menu_Query/includes
  */
 
+if ( !function_exists( 'trigger_error_with_context' ) ) {
+	
+	/**
+	 * Trigger error and display where the current function was called from.
+	 * Allows for more useful errors as by default the filenames and line numbers 
+	 * are reported from the class or function that calls trigger_error();
+	 * @param  string  $message The error message.
+	 * @param  integer $level   The designated error type for this error. 
+	 *                          It only works with the E_USER family of constants, 
+	 *                          and will default to E_USER_NOTICE.
+	 * @param integer $depth  	The number of levels up the backtrace that should be reported. 
+	 */
+	function trigger_error_with_context($message, $level=E_USER_NOTICE, $depth = 1 ) { 
+		$backtrace = debug_backtrace();
+
+		for ($i=0; $i < $depth; $i++) { 
+		  $caller = next($backtrace); 
+		}
+
+	  $caller_function = $caller['function'];
+	  if ( '__construct' === $caller_function && isset( $caller['class'] ) ) {
+	  	$caller_function = 'new ' . $caller['class'] . '()';
+	  } elseif ( isset( $caller['class'] ) ) {
+	  	$caller_function = $caller['class'] . ':' . $caller_function;
+	  }
+
+	  $caller_file = $caller['file'];
+	  $caller_line = $caller['line'];
+
+	  $message = sprintf( 
+	  	'%s in <b>%s</b> called from <b>%s</b> on line <b>%s</b> -- reported by custom error handler',
+	  	$message,
+	  	$caller_function,
+	  	$caller_file,
+	  	$caller_line
+	  );
+
+	  trigger_error( $message, $level ); 
+	} 
+
+}
+
 /**
  * The core plugin class.
  *
@@ -119,6 +161,13 @@ class _WP_Menu_Query {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-menu-query-public.php';
 
+		/**
+		 * The API classes designed to be usable by the developer.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu-query.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu-item.php';
+
 		$this->loader = new WP_Menu_Query_Loader();
 
 	}
@@ -151,8 +200,11 @@ class _WP_Menu_Query {
 
 		$plugin_admin = new WP_Menu_Query_Admin( $this->get_plugin_name(), $this->get_version() );
 
+		/**
+		 * No assets to load at the moment.
+		 */
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		// $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 
 	}
 
@@ -167,8 +219,11 @@ class _WP_Menu_Query {
 
 		$plugin_public = new WP_Menu_Query_Public( $this->get_plugin_name(), $this->get_version() );
 
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		/**
+		 * No assets to load at the moment.
+		 */
+		// $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
+		// $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
 	}
 
