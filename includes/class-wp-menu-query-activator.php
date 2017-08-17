@@ -3,11 +3,11 @@
 /**
  * Fired during plugin activation
  *
- * @link       http://example.com
+ * @link       https://github.com/AdamEDGECreative/WP_Menu_Query
  * @since      1.0.0
  *
- * @package    Plugin_Name
- * @subpackage Plugin_Name/includes
+ * @package    WP_Menu_Query
+ * @subpackage WP_Menu_Query/includes
  */
 
 /**
@@ -16,11 +16,11 @@
  * This class defines all code necessary to run during the plugin's activation.
  *
  * @since      1.0.0
- * @package    Plugin_Name
- * @subpackage Plugin_Name/includes
- * @author     Your Name <email@example.com>
+ * @package    WP_Menu_Query
+ * @subpackage WP_Menu_Query/includes
+ * @author     Adam Taylor <adam@edge-creative.com>
  */
-class Plugin_Name_Activator {
+class WP_Menu_Query_Activator {
 
 	/**
 	 * Short Description. (use period)

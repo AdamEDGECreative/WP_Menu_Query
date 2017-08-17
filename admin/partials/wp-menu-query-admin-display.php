@@ -5,11 +5,11 @@
  *
  * This file is used to markup the admin-facing aspects of the plugin.
  *
- * @link       http://example.com
+ * @link       https://github.com/AdamEDGECreative/WP_Menu_Query
  * @since      1.0.0
  *
- * @package    Plugin_Name
- * @subpackage Plugin_Name/admin/partials
+ * @package    WP_Menu_Query
+ * @subpackage WP_Menu_Query/admin/partials
  */
 ?>
 

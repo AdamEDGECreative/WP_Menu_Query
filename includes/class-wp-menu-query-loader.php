@@ -3,11 +3,11 @@
 /**
  * Register all actions and filters for the plugin
  *
- * @link       http://example.com
+ * @link       https://github.com/AdamEDGECreative/WP_Menu_Query
  * @since      1.0.0
  *
- * @package    Plugin_Name
- * @subpackage Plugin_Name/includes
+ * @package    WP_Menu_Query
+ * @subpackage WP_Menu_Query/includes
  */
 
 /**
@@ -17,11 +17,11 @@
  * the plugin, and register them with the WordPress API. Call the
  * run function to execute the list of actions and filters.
  *
- * @package    Plugin_Name
- * @subpackage Plugin_Name/includes
- * @author     Your Name <email@example.com>
+ * @package    WP_Menu_Query
+ * @subpackage WP_Menu_Query/includes
+ * @author     Adam Taylor <adam@edge-creative.com>
  */
-class Plugin_Name_Loader {
+class WP_Menu_Query_Loader {
 
 	/**
 	 * The array of actions registered with WordPress.
