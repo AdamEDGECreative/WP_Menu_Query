@@ -237,10 +237,7 @@ class WP_Menu_Query {
 		$query_cache = WP_Menu_Query_Cache::get_instance();
 		$this->items = $query_cache->get_items( $menu->term_id );
 
-		// Replace the parent with an ID if an item_type_array was passed
-		if ( $this->_parent_is_item_type_array() ) {
-			$this->set( 'parent', $this->_find_parent( $this->get( 'parent' ) ) );
-		}
+		$this->_filter_parent_arg();
 
 		// Filter the items array to only include child items of the parent 
 		// if parent option was passed.
@@ -315,6 +312,13 @@ class WP_Menu_Query {
 
 	private function _location_has_menu() {
 		return WP_Menu_Location::location_has_menu( $this->get( 'location' ) );
+	}
+
+	private function _filter_parent_arg() {
+		// Replace the parent with an ID if an item_type_array was passed
+		if ( $this->_parent_is_item_type_array() ) {
+			$this->set( 'parent', $this->_find_parent( $this->get( 'parent' ) ) );
+		}
 	}
 
 	private function _parent_is_item_type_array() {
