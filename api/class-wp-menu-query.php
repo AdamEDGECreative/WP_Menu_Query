@@ -328,7 +328,7 @@ class WP_Menu_Query {
 
 	private function _filter_item( $item ) {
 		// Convert the item to a WP_Menu_Item
-		$item = new WP_Menu_Item( $item, $this->get( 'location' ) );
+		$item = new WP_Menu_Item( $item, $this->query_vars );
 
 		/**
 		 * Check include conditions if passed.

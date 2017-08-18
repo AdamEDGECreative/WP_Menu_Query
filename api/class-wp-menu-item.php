@@ -26,10 +26,11 @@ class WP_Menu_Item {
 	private $_raw_item;
 
 	/**
-	 * The menu location this item was created for.
-	 * @var string
+	 * The query vars used for a WP_Menu_Query 
+	 * if this item was created from a query.
+	 * @var array
 	 */
-	public $location;
+	public $query_vars;
 
 	/**
 	 * Whether this menu item is the currently queried page or not.
@@ -55,11 +56,11 @@ class WP_Menu_Item {
 	 * @since    1.0.0
 	 * @param    WP_Post    $item The raw menu item.
 	 */
-	public function __construct( WP_Post $item, $location ) {
+	public function __construct( WP_Post $item, $query_vars = null ) {
 		$this->_raw_item = $item;
 		$this->_map( $item );
 
-		$this->location = $location;
+		$this->query_vars = $query_vars;
 
 		$this->_children = null;
 		$this->_has_current_child = null;
@@ -175,12 +176,15 @@ class WP_Menu_Item {
 	}
 
 	private function _get_children() {
-		$this->_children = new WP_Menu_Query(
-			array( 
-				'location' => $this->location,
-				'parent' => $this->ID,
-			)
-		);
+		// Create instance
+		$this->_children = new WP_Menu_Query();
+
+		// Set up the query vars required
+		$this->_children->query_vars = $this->query_vars;
+		$this->_children->set( 'parent', $this->ID );
+
+		// Run the query
+		$this->_children->query();
 	}
 
 	private function _map( WP_Post $item ) {
