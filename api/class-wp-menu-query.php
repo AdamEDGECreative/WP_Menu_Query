@@ -68,7 +68,10 @@ class WP_Menu_Query {
 	 *                          without args, query vars set and then items fetched.
 	 */
 	public function __construct( $args = null ) {
+		$this->_location_error_depth = 3;
+
 		if ( null !== $args ) {
+			$this->_location_error_depth = 4;
 			$this->query( $args );
 		}
 	}
@@ -152,18 +155,6 @@ class WP_Menu_Query {
 		);
 	}
 
-	private function _location_is_registered() {
-		$registered_locations = get_registered_nav_menus();
-		
-		return isset( $registered_locations[ $this->get( 'location' ) ] );
-	}
-
-	private function _location_has_menu() {
-		$menu_locations = get_nav_menu_locations();
-		
-		return isset( $menu_locations[ $this->get( 'location' ) ] );
-	}
-
 	public function get( $var_name ) {
 		return $this->query_vars[ $var_name ];
 	}
@@ -236,7 +227,9 @@ class WP_Menu_Query {
 
 		// Get the items
 		$menu = $this->get_menu();
-		$items = wp_get_nav_menu_items( $menu->term_id );
+
+		$query_cache = WP_Menu_Query_Cache::get_instance();
+		$items = $query_cache->get_items( $menu->term_id );
 
 		// Filter the items array to only include child items of the parent 
 		// if parent option was passed.
@@ -272,20 +265,31 @@ class WP_Menu_Query {
 			!$location || 
 			'' == $location 
 		) {
-			trigger_error_with_context( "Location is a required key and must be set", E_USER_ERROR, 4 );
+			trigger_error_with_context( "Location is a required key and must be set", E_USER_ERROR, $this->_location_error_depth );
+			return false;
 		}
 
 		if ( !$this->_location_is_registered() ) {
 			
-			trigger_error_with_context( "The location '$location' is not registered", E_USER_WARNING, 4 );
+			trigger_error_with_context( "The location '$location' is not registered", E_USER_WARNING, $this->_location_error_depth );
+			return false;
 
 		} elseif ( !$this->_location_has_menu() ) {
 		
-			trigger_error_with_context( "The location '$location' does not have an attached menu", E_USER_WARNING, 4 );
+			trigger_error_with_context( "The location '$location' does not have an attached menu", E_USER_WARNING, $this->_location_error_depth );
+			return false;
 
 		}
 
 		return true;
+	}
+
+	private function _location_is_registered() {
+		return WP_Menu_Location::location_is_registered( $this->get( 'location' ) );
+	}
+
+	private function _location_has_menu() {
+		return WP_Menu_Location::location_has_menu( $this->get( 'location' ) );
 	}
 
 	private function _filter_to_parent( $item ) {
@@ -365,7 +369,9 @@ class WP_Menu_Query {
 	 */
 	public function get_menu() {
 		$menu_location = $this->get( 'location' );
-		return new WP_Menu( $menu_location );
+
+		$query_cache = WP_Menu_Query_Cache::get_instance();
+		return $query_cache->get_location_term( $menu_location );
 	}
 
 }

@@ -50,6 +50,10 @@ class WP_Menu {
 			if ( $this->_location_has_menu() ) {
 				
 				$this->_init_menu_object();
+
+				if ( null === $this->_menu_object ) {
+					trigger_error_with_context( "The menu object for location '{$this->_menu_location}' could not be found or created", E_USER_ERROR );
+				}
 				
 			} else {
 
@@ -65,28 +69,18 @@ class WP_Menu {
 	}
 
 	private function _location_is_registered() {
-		$registered_locations = get_registered_nav_menus();
-		
-		return isset( $registered_locations[ $this->_menu_location ] );
+		return WP_Menu_Location::location_is_registered( $this->_menu_location );
 	}
 
 	private function _location_has_menu() {
-		$menu_locations = get_nav_menu_locations();
-		
-		return isset( $menu_locations[ $this->_menu_location ] );
+		return WP_Menu_Location::location_has_menu( $this->_menu_location );
 	}
 
 	/**
 	 * Get the menu object for the location chosen.
 	 */
 	private function _init_menu_object() {
-		$menu_locations = get_nav_menu_locations();
-
-		if ( isset( $menu_locations[ $this->_menu_location ] ) ) {
-			
-			$this->_menu_object = wp_get_nav_menu_object( $menu_locations[ $this->_menu_location ] );
-
-		}
+		$this->_menu_object = WP_Menu_Location::get_menu_from_location( $this->_menu_location );
 	}
 
 	public function get_items() {

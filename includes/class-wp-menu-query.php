@@ -164,7 +164,9 @@ class _WP_Menu_Query {
 		/**
 		 * The API classes designed to be usable by the developer.
 		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu-location.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu-query-cache.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu-query.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'api/class-wp-menu-item.php';
 
