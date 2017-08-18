@@ -135,11 +135,17 @@ class WP_Menu_Query {
 			 */
 			'exclude' => array(),
 			/**
-			 * Limit the amount of menu items returned.
+			 * Limit the amount of top level menu items returned.
 			 * Use -1 to show all menu items.
 			 * @var integer
 			 */
 			'limit' => -1,
+			/**
+			 * Limit the amount of child menu items returned.
+			 * Use -1 to show all child menu items.
+			 * @var integer
+			 */
+			'limit_children' => -1,
 			/**
 			 * The number of items to skip from the start of the menu before output.
 			 * Will only applied to top level items (parent == 0)
@@ -231,6 +237,11 @@ class WP_Menu_Query {
 		$query_cache = WP_Menu_Query_Cache::get_instance();
 		$this->items = $query_cache->get_items( $menu->term_id );
 
+		// Replace the parent with an ID if an item_type_array was passed
+		if ( $this->_parent_is_item_type_array() ) {
+			$this->set( 'parent', $this->_find_parent( $this->get( 'parent' ) ) );
+		}
+
 		// Filter the items array to only include child items of the parent 
 		// if parent option was passed.
 		$this->items = array_values( array_filter( $this->items, array( $this, '_filter_to_parent' ) ) );
@@ -247,8 +258,21 @@ class WP_Menu_Query {
 
 		// Apply limit and offset if passed
 		$limit = count( $this->items );
-		if ( $this->get( 'limit' ) > -1 && is_numeric( $this->get( 'limit' ) ) ) {
-			$limit = (integer)$this->get( 'limit' );
+
+		if ( 0 == $this->get( 'parent' ) ) {
+			
+			// Use 'limit' arg for top level items
+			if ( $this->get( 'limit' ) > -1 && is_numeric( $this->get( 'limit' ) ) ) {
+				$limit = (integer)$this->get( 'limit' );
+			}
+
+		} else {
+
+			// Use 'limit_children' arg for child items
+			if ( $this->get( 'limit_children' ) > -1 && is_numeric( $this->get( 'limit_children' ) ) ) {
+				$limit = (integer)$this->get( 'limit_children' );
+			}
+
 		}
 
 		$this->items = array_slice( $this->items, $this->get( 'offset' ), $limit );
@@ -293,24 +317,10 @@ class WP_Menu_Query {
 		return WP_Menu_Location::location_has_menu( $this->get( 'location' ) );
 	}
 
-	private function _filter_to_parent( $item ) {
-		$parent = 0;
-		if ( $this->get( 'parent' ) > 0 && is_numeric( $this->get( 'parent' ) ) ) {
-			
-			// If parent is an ID can use it directly
-			$parent = $this->get( 'parent' );
+	private function _parent_is_item_type_array() {
+		$_parent = $this->get( 'parent' );
 
-		} elseif ( is_array( $this->get( 'parent' ) ) ) {
-
-			// If parent is an item_type_array, match it and get the ID
-			$_parent = $this->get( 'parent' );
-			if ( isset( $_parent['type'], $_parent['id'] ) ) {
-				$parent = $this->_find_parent( $_parent );
-			}
-
-		}
-
-		return $parent === (integer)$item->menu_item_parent;
+		return is_array( $_parent ) && isset( $_parent['type'], $_parent['id'] );
 	}
 
 	private function _find_parent( $item_type_array ) {
@@ -324,6 +334,19 @@ class WP_Menu_Query {
 		}
 
 		return $match;
+	}
+
+	private function _filter_to_parent( $item ) {
+		$parent = 0;
+
+		if ( $this->get( 'parent' ) > 0 && is_numeric( $this->get( 'parent' ) ) ) {
+			
+			// If parent is an ID use it directly
+			$parent = $this->get( 'parent' );
+
+		}
+
+		return $parent === (integer)$item->menu_item_parent;
 	}
 
 	private function _filter_item( $item ) {
