@@ -229,16 +229,17 @@ class WP_Menu_Query {
 		$menu = $this->get_menu();
 
 		$query_cache = WP_Menu_Query_Cache::get_instance();
-		$items = $query_cache->get_items( $menu->term_id );
+		$this->items = $query_cache->get_items( $menu->term_id );
 
 		// Filter the items array to only include child items of the parent 
 		// if parent option was passed.
-		$items = array_values( array_filter( $items, array( $this, '_filter_to_parent' ) ) );
+		$this->items = array_values( array_filter( $this->items, array( $this, '_filter_to_parent' ) ) );
 
 		// Map the items to corresponding WP_Menu_Items
-		foreach ($items as $key => $item) {
+		foreach ($this->items as $key => &$item) {
 			// _filter_item will return the mapped item, or false if invalid
-			$this->items[] = $this->_filter_item( $item );
+			$item = $this->_filter_item( $item );
+			unset( $item );
 		}
 
 		// Remove any invalid items & re index the array
@@ -295,10 +296,34 @@ class WP_Menu_Query {
 	private function _filter_to_parent( $item ) {
 		$parent = 0;
 		if ( $this->get( 'parent' ) > 0 && is_numeric( $this->get( 'parent' ) ) ) {
+			
+			// If parent is an ID can use it directly
 			$parent = $this->get( 'parent' );
+
+		} elseif ( is_array( $this->get( 'parent' ) ) ) {
+
+			// If parent is an item_type_array, match it and get the ID
+			$_parent = $this->get( 'parent' );
+			if ( isset( $_parent['type'], $_parent['id'] ) ) {
+				$parent = $this->_find_parent( $_parent );
+			}
+
 		}
 
 		return $parent === (integer)$item->menu_item_parent;
+	}
+
+	private function _find_parent( $item_type_array ) {
+		$match = 0;
+
+		foreach ($this->items as $key => $item) {
+			if ( 0 == $item->menu_item_parent && $this->_raw_item_matches_type_array( $item, $item_type_array ) ) {
+				$match = $item->ID;
+				break;
+			}
+		}
+
+		return $match;
 	}
 
 	private function _filter_item( $item ) {
@@ -354,6 +379,23 @@ class WP_Menu_Query {
 		}
 
 		return $item;
+	}
+
+	private function _raw_item_matches_type_array( $item, $item_type_array ) {
+		$type = $item->object;
+		$id = $item->object_id;
+
+		if ( 'post_type_archive' === $type ) {
+			$id = $item->object;
+		}
+		if ( 'custom' === $type ) {
+			$id = $item->url;
+		}
+
+		return (
+			$type == $item_type_array['type'] &&
+			$id == $item_type_array['id']
+		);
 	}
 
 	private function _item_matches_type_array( $item, $item_type_array ) {
