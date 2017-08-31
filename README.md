@@ -1,3 +1,5 @@
+~ Documentation coming soon! Stay Tuned! ~
+
 === Plugin Name ===
 Contributors: (this should be a list of wordpress.org userid's)
 Donate link: https://github.com/AdamEDGECreative/WP_Menu_Query/
