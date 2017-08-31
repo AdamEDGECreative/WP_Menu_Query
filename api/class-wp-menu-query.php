@@ -233,9 +233,7 @@ class WP_Menu_Query {
 
 		// Get the items
 		$menu = $this->get_menu();
-
-		$query_cache = WP_Menu_Query_Cache::get_instance();
-		$this->items = $query_cache->get_items( $menu->term_id );
+		$this->items = $this->_get_menu_items( $menu );
 
 		$this->_filter_parent_arg();
 
@@ -243,36 +241,9 @@ class WP_Menu_Query {
 		// if parent option was passed.
 		$this->items = array_values( array_filter( $this->items, array( $this, '_filter_to_parent' ) ) );
 
-		// Map the items to corresponding WP_Menu_Items
-		foreach ($this->items as $key => &$item) {
-			// _filter_item will return the mapped item, or false if invalid
-			$item = $this->_filter_item( $item );
-			unset( $item );
-		}
+		$this->_map_items_to_objects();
 
-		// Remove any invalid items & re index the array
-		$this->items = array_values( array_filter( $this->items ) );
-
-		// Apply limit and offset if passed
-		$limit = count( $this->items );
-
-		if ( 0 == $this->get( 'parent' ) ) {
-			
-			// Use 'limit' arg for top level items
-			if ( $this->get( 'limit' ) > -1 && is_numeric( $this->get( 'limit' ) ) ) {
-				$limit = (integer)$this->get( 'limit' );
-			}
-
-		} else {
-
-			// Use 'limit_children' arg for child items
-			if ( $this->get( 'limit_children' ) > -1 && is_numeric( $this->get( 'limit_children' ) ) ) {
-				$limit = (integer)$this->get( 'limit_children' );
-			}
-
-		}
-
-		$this->items = array_slice( $this->items, $this->get( 'offset' ), $limit );
+		$this->_apply_limits();
 
 		// Update class properties with number found
 		$this->item_count = count( $this->items );
@@ -314,6 +285,22 @@ class WP_Menu_Query {
 		return WP_Menu_Location::location_has_menu( $this->get( 'location' ) );
 	}
 
+	/**
+	 * Get a WP_Menu object representing the menu currently queried.
+	 * @return WP_Menu 
+	 */
+	public function get_menu() {
+		$menu_location = $this->get( 'location' );
+
+		$query_cache = WP_Menu_Query_Cache::get_instance();
+		return $query_cache->get_location_term( $menu_location );
+	}
+
+	private function _get_menu_items( WP_Menu $menu ) {
+		$query_cache = WP_Menu_Query_Cache::get_instance();
+		return $query_cache->get_items( $menu->term_id );
+	}
+
 	private function _filter_parent_arg() {
 		// Replace the parent with an ID if an item_type_array was passed
 		if ( $this->_parent_is_item_type_array() ) {
@@ -351,6 +338,18 @@ class WP_Menu_Query {
 		}
 
 		return $parent === (integer)$item->menu_item_parent;
+	}
+
+	private function _map_items_to_objects() {
+		// Map the items to corresponding WP_Menu_Items
+		foreach ($this->items as $key => &$item) {
+			// _filter_item will return the mapped item, or false if invalid
+			$item = $this->_filter_item( $item );
+			unset( $item );
+		}
+
+		// Remove any invalid items & re index the array
+		$this->items = array_values( array_filter( $this->items ) );
 	}
 
 	private function _filter_item( $item ) {
@@ -432,15 +431,27 @@ class WP_Menu_Query {
 		);
 	}
 
-	/**
-	 * Get a WP_Menu object representing the menu currently queried.
-	 * @return WP_Menu 
-	 */
-	public function get_menu() {
-		$menu_location = $this->get( 'location' );
+	private function _apply_limits() {
+		// Apply limit and offset if passed
+		$limit = count( $this->items );
 
-		$query_cache = WP_Menu_Query_Cache::get_instance();
-		return $query_cache->get_location_term( $menu_location );
+		if ( 0 == $this->get( 'parent' ) ) {
+			
+			// Use 'limit' arg for top level items
+			if ( $this->get( 'limit' ) > -1 && is_numeric( $this->get( 'limit' ) ) ) {
+				$limit = (integer)$this->get( 'limit' );
+			}
+
+		} else {
+
+			// Use 'limit_children' arg for child items
+			if ( $this->get( 'limit_children' ) > -1 && is_numeric( $this->get( 'limit_children' ) ) ) {
+				$limit = (integer)$this->get( 'limit_children' );
+			}
+
+		}
+
+		$this->items = array_slice( $this->items, $this->get( 'offset' ), $limit );
 	}
 
 }
