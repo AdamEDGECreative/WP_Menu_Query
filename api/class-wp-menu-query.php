@@ -86,37 +86,6 @@ class WP_Menu_Query {
 	}
 
 	private function _get_default_args() {
-
-		/**
-		 * For the below documentation, the term 
-		 * item_type_array refers to an array with type and id keys.
-		 * With these 2 keys we can match any menu item specifically.
-		 *
-		 * @param string 			 	 'type' The type of object. 
-		 *                      			  A valid post type slug, taxonomy slug or 'custom'.
-		 *                      			  For post type archives, pass the post type slug.
-		 * @param integer|string 'id' 	The ID of the post or taxonomy term to include.
-		 *                             	For post type archives should be the post type slug.
-		 *                              For custom links should be set to the URL of the link.
-		 *
-		 * Examples:
-		 *
-		 * array(
-		 * 	 'type' => 'post',
-		 * 	 'id' 	=> 1,
-		 * );
-		 * 
-		 * array(
-		 * 	 'type' => 'post',
-		 * 	 'id' 	=> 'post',
-		 * );
-		 * 
-		 * array(
-		 * 	 'type' => 'custom',
-		 * 	 'id'   => 'http://example.com',
-		 * );
-		 */
-
 		return array(
 			/**
 			 * The location the menu is attached to.
@@ -126,12 +95,17 @@ class WP_Menu_Query {
 			/**
 			 * Specific menu items to include. Only these items 
 			 * (if they exist in the menu) will be output.
-			 * Specify them as an array of item_type_arrays
+			 * 
+			 * Pass a URL to be matched against each menu item.
+			 * Relative URLs are valid and will be mapped relative to the home URL.
+			 * @var string 
 			 */
 			'include' => array(),
 			/**
 			 * Specific menu items to exclude. Any matching items will be removed.
-			 * Specify them as an array of item_type_arrays
+			 * 
+			 * Pass a URL to be matched against each menu item.
+			 * Relative URLs are valid and will be mapped relative to the home URL.
 			 */
 			'exclude' => array(),
 			/**
@@ -148,14 +122,17 @@ class WP_Menu_Query {
 			'limit_children' => -1,
 			/**
 			 * The number of items to skip from the start of the menu before output.
-			 * Will only applied to top level items (parent == 0)
+			 * Will only be applied to top level items (parent == 0)
 			 * @var integer
 			 */
 			'offset' => 0,
 			/**
-			 * Pass a specific item_type_array or a menu item ID 
-			 * to get child items for that item.
-			 * @var array|integer
+			 * Pass a specific URL or a menu item's ID 
+			 * to get child items for that URL or ID.
+			 *
+			 * Absolute or relative URLs are both valid.
+			 * Relative URLs will be mapped relative to the home URL.
+			 * @var string|integer
 			 */
 			'parent' => 0,
 		);
@@ -301,23 +278,28 @@ class WP_Menu_Query {
 	}
 
 	private function _filter_parent_arg() {
-		// Replace the parent with an ID if an item_type_array was passed
-		if ( $this->_parent_is_item_type_array() ) {
-			$this->set( 'parent', $this->_find_parent( $this->get( 'parent' ) ) );
+		// Replace the parent with an ID if a URL was passed
+		if ( $this->_parent_is_url() ) {
+			$parent = $this->get( 'parent' );
+
+			// Make the parent URL relative to the home page URL if not absolute
+			$parent = $this->_filter_url( $parent );
+
+			$this->set( 'parent', $this->_find_parent( $parent ) );
 		}
 	}
 
-	private function _parent_is_item_type_array() {
+	private function _parent_is_url() {
 		$_parent = $this->get( 'parent' );
 
-		return is_array( $_parent ) && isset( $_parent['type'], $_parent['id'] );
+		return is_string( $_parent );
 	}
 
-	private function _find_parent( $item_type_array ) {
+	private function _find_parent( $url ) {
 		$match = 0;
 
 		foreach ($this->items as $key => $item) {
-			if ( 0 == $item->menu_item_parent && $this->_raw_item_matches_type_array( $item, $item_type_array ) ) {
+			if ( 0 == $item->menu_item_parent && $this->_item_matches_url( $item, $url ) ) {
 				$match = $item->ID;
 				break;
 			}
@@ -333,6 +315,8 @@ class WP_Menu_Query {
 			
 			// If parent is an ID use it directly
 			$parent = $this->get( 'parent' );
+
+			// If not, use 0 as the default
 
 		}
 
@@ -363,9 +347,11 @@ class WP_Menu_Query {
 			
 			$_include = array();
 
-			foreach ($this->get( 'include' ) as $key => $item_type_array) {
+			foreach ($this->get( 'include' ) as $key => $url) {
 				
-				if ( $this->_item_matches_type_array( $item, $item_type_array ) ) {
+				$url = $this->_filter_url( $url );
+
+				if ( $this->_item_matches_url( $item, $url ) ) {
 					$_include[] = 1;
 				} else {
 					$_include[] = 0;
@@ -387,9 +373,11 @@ class WP_Menu_Query {
 			
 			$_exclude = array();
 
-			foreach ($this->get( 'exclude' ) as $key => $item_type_array) {
+			foreach ($this->get( 'exclude' ) as $key => $url) {
 				
-				if ( $this->_item_matches_type_array( $item, $item_type_array ) ) {
+				$url = $this->_filter_url( $url );
+
+				if ( $this->_item_matches_url( $item, $url ) ) {
 					$_exclude[] = 1;
 				} else {
 					$_exclude[] = 0;
@@ -406,28 +394,20 @@ class WP_Menu_Query {
 		return $item;
 	}
 
-	private function _raw_item_matches_type_array( $item, $item_type_array ) {
-		$type = $item->object;
-		$id = $item->object_id;
+	private function _filter_url( $url ) {
+		// Check for relative URLs and make them relative to the home URL
+		// Checked by detecting links that do not start with http:// or https://
+		$url_start_pattern = '#^https?://#';
 
-		if ( 'post_type_archive' === $type ) {
-			$id = $item->object;
-		}
-		if ( 'custom' === $type ) {
-			$id = $item->url;
+		if ( !preg_match( $url_start_pattern, $url ) ) {
+			$url = trailingslashit( home_url( $url ) );
 		}
 
-		return (
-			$type == $item_type_array['type'] &&
-			$id == $item_type_array['id']
-		);
+		return $url;
 	}
 
-	private function _item_matches_type_array( $item, $item_type_array ) {
-		return (
-			$item->object == $item_type_array['type'] &&
-			$item->object_id == $item_type_array['id']
-		);
+	private function _item_matches_url( $item, $url ) {
+		return $item->url == $url;
 	}
 
 	private function _apply_limits() {
