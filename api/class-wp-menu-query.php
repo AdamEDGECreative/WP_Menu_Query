@@ -246,8 +246,7 @@ class WP_Menu_Query {
 		$this->_apply_limits();
 
 		// Update class properties with number found
-		$this->item_count = count( $this->items );
-		$this->found_items = $this->item_count;
+		$this->_update_counts();
 	}
 
 	private function _check_location() {
@@ -452,6 +451,11 @@ class WP_Menu_Query {
 		}
 
 		$this->items = array_slice( $this->items, $this->get( 'offset' ), $limit );
+	}
+
+	private function _update_counts() {
+		$this->item_count = count( $this->items );
+		$this->found_items = $this->item_count;
 	}
 
 }
