@@ -14,11 +14,10 @@
  *
  * @wordpress-plugin
  * Plugin Name:       WordPress Menu Query
- * Plugin URI:        https://github.com/AdamEDGECreative/WP_Menu_Query/
  * Description:       Allows menus and menu items to be queried like posts.
  * Version:           1.0.0
- * Author:            EDGE Creative
- * Author URI:        https://www.edge-creative.com
+ * Author:            Adam Taylor
+ * Author URI:        https://www.iamadamtaylor.com
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       wp-menu-query
