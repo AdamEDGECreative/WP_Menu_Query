@@ -169,6 +169,9 @@ class WP_Menu_Item {
 			if ( $item->is_current() ) {
 				$match = true;
 				break;
+			} elseif ( $item->has_current_child() ) {
+				$match = true;
+				break;
 			}
 		}
 
@@ -278,7 +281,7 @@ class WP_Menu_Item {
 		
 		/**
 		 * The description of the menu item.
-		 * Each menu item can have a description added in the Menus screen/
+		 * Each menu item can have a description added in the Menus screen.
 		 * @var string
 		 */
 		$this->description = $item->description;
