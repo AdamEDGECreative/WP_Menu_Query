@@ -406,9 +406,12 @@ class WP_Menu_Query {
 	private function _filter_url( $url ) {
 		// Check for relative URLs and make them relative to the home URL
 		// Checked by detecting links that do not start with http:// or https://
-		$url_start_pattern = '#^https?://#';
+		$url_is_absolute = (
+			0 === strpos( $url, 'https://' ) ||
+			0 === strpos( $url, 'http://' )
+		);
 
-		if ( !preg_match( $url_start_pattern, $url ) ) {
+		if ( !$url_is_absolute ) {
 			$url = trailingslashit( home_url( $url ) );
 		}
 
