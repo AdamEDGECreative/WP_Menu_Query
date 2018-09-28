@@ -299,7 +299,7 @@ class WP_Menu_Query {
 		$match = 0;
 
 		foreach ($this->items as $key => $item) {
-			if ( 0 == $item->menu_item_parent && $this->_item_matches_url( $item, $url ) ) {
+			if ( $this->_item_matches_url( $item, $url ) ) {
 				$match = $item->ID;
 				break;
 			}
