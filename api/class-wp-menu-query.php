@@ -339,6 +339,15 @@ class WP_Menu_Query {
 		// Convert the item to a WP_Menu_Item
 		$item = new WP_Menu_Item( $item, $this->query_vars );
 
+		// Only keep published posts
+		if ( $item->type === 'post_type' ) {
+			$_post = get_post( $item->object_id );
+
+			if ( $_post->post_status != 'publish' ) {
+				return false;
+			}
+		}
+
 		/**
 		 * Check include conditions if passed.
 		 * Returns false if the item matches one in the include array.
